@@ -1,9 +1,10 @@
-//VERSION 1,0,0
+//LIVE VERSION 2,0,0 incl fcm
 var express    = require('express');
 var mysql      = require('mysql');
 var bodyParser = require('body-parser');
 var apn = require('apn');
-var gcm = require('node-gcm');
+//var gcm = require('node-gcm');
+var fcm = require('fcm-push');
 var nodemailer = require('nodemailer');
 var ejs = require('ejs');
 var fs = require('fs');
@@ -260,15 +261,7 @@ app.get("/skberlaar/loctestpush",function(req,res){
 
 /*ANDROID push message setup*/
 
-var alarmMessage = new gcm.Message();
-alarmMessage.addNotification({
-  title: 'SK Berlaar',
-  body: 'afgelasting',
-  icon: 'skberlaarlogo',
-  sound: 'true'
-});
-
-var sender = new gcm.Sender('AIzaSyDol9RlosgGd7sg0NVIyW40mw1pqG_c8nc');
+var fcmSender = new fcm('AAAAPK8iGGM:APA91bEJUBP-ilZOqYz_5roVMdx3KkjKC6Av5H-p3LsT9kb9Y1gBTNeQP76HBUj7ky7bc8h72E0nMaaSPUISf8Cp0sUvdyle0F2-aPsI1wafilUqGXlnIqHpk7bGBWuUKovH637ltoYl');
 
 
 /*ANDROID push messages*/
@@ -279,7 +272,6 @@ var date = req.body.date;
 var teamName = req.body.teamname;
 var eventType = req.body.eventType;
 var title = "annulation";
-var alarmMessage2 = new gcm.Message();
 console.log(teamID);
 
   var connquery = "SELECT tokens.accountID, tokens.token, tokens.device_language FROM tokens LEFT JOIN accounts ON tokens.accountID = accounts.account_ID WHERE accounts.favorites REGEXP '[[:<:]]" + teamID + "[[:>:]]' AND tokens.send = 1 AND tokens.device_type = 'Android' AND tokens.send_livemode = 1";
@@ -292,20 +284,23 @@ console.log(teamID);
         var body = androidtranslator[row.device_language][eventType];
         body = body.replace("%1", date);
         body = body.replace("%2", teamName);
-        alarmMessage2.addNotification({
-          title: locTitle,
-          body: body,
-          icon: 'footcallogo',
-          sound: 'true'
-        });
-        console.log(alarmMessage2);
 
-          sender.sendNoRetry(alarmMessage2, { to : row.token }, function(err, response) {
-        if(err) console.error(err);
-        else {
-          console.log(JSON.stringify(response));
+        var fcmMessage = {
+          to: row.token,
+          notification: {
+            title: locTitle,
+            body: body,
+            sound: 'true'
+          }
+        };
+        console.log(fcmMessage);
+        fcmSender.send(fcmMessage, function(err, response){
+        if (err) {
+          console.log("Something has gone wrong!" , err);
+        } else {
+         console.log("Successfully sent with response: ", response);
         }
-      });
+        });
       });
     }else{
       console.log('Error while performing Query.');
@@ -321,7 +316,25 @@ var my_name = "Sven";
 var language = "en";
 var text = "game_start";
 
-console.log(androidtranslator);
+//console.log(androidtranslator);
+
+var message = {
+    to: 'dfF5YoUw2M0:APA91bEx-A3caCELHBhi-f4OukTF7ufD2uX1SCkGoFNSPDWVltb5Pv5ucsNkkaAGjp-9Jn0q3l2XWg7Q_wNO5Ivfn5SaqzQ4xnxFiVzmapnuaa4jaQpAL-WaHrjfEBOE_ADVrhTK_A0v', // required fill with device token or topics 
+    notification: {
+        title: 'Eerste nodejs test',
+        body: 'FootCal is the best !!',
+        sound: 'true'
+    }
+};
+
+fcmSender.send(message, function(err, response){
+    if (err) {
+        console.log("Something has gone wrong!" , err);
+    } else {
+        console.log("Successfully sent with response: ", response);
+    }
+});
+
 /*
 var body = translator[language][text];
 body = body.replace("%1", my_name);
@@ -337,8 +350,6 @@ var teamID = req.body.teamid;
 var body = req.body.body;
 var title = req.body.title;
 var teamName = req.body.teamname;
-
-var alarmMessage3 = new gcm.Message();
 console.log(teamID);
 
   var connquery = "SELECT tokens.accountID, tokens.token, tokens.device_language FROM tokens LEFT JOIN accounts ON tokens.accountID = accounts.account_ID WHERE accounts.favorites REGEXP '[[:<:]]" + teamID + "[[:>:]]' AND tokens.send = 1 AND tokens.device_type = 'Android' AND tokens.send_livemode = 1";
@@ -349,20 +360,23 @@ console.log(teamID);
       rows.forEach(function(row, i) {
         var locTitle = androidtranslator[row.device_language][title];
         locTitle = locTitle.replace("%1", teamName);
-        alarmMessage3.addNotification({
-          title: locTitle,
-          body: body,
-          icon: 'footcallogo',
-          sound: 'true'
-        });
-        console.log(alarmMessage3);
+        var fcmMessage = {
+          to: row.token,
+          notification: {
+            title: locTitle,
+            body: body,
+            sound: 'true'
+          }
+        };
+        console.log(fcmMessage);
 
-          sender.sendNoRetry(alarmMessage3, { to : row.token }, function(err, response) {
-        if(err) console.error(err);
-        else {
-          console.log(JSON.stringify(response));
+        fcmSender.send(fcmMessage, function(err, response){
+        if (err) {
+          console.log("Something has gone wrong!" , err);
+        } else {
+         console.log("Successfully sent with response: ", response);
         }
-      });
+        });
       });
     }else{
       console.log('Error while performing Query.');
@@ -379,7 +393,6 @@ var teamName = req.body.teamname;
 var playerName = req.body.playername;
 var homeGoals = req.body.homegoals;
 var awayGoals = req.body.awaygoals;
-var alarmMessage3 = new gcm.Message();
 
   var connquery = "SELECT tokens.accountID, tokens.token, tokens.device_language FROM tokens LEFT JOIN accounts ON tokens.accountID = accounts.account_ID WHERE accounts.favorites REGEXP '[[:<:]]" + teamID + "[[:>:]]' AND tokens.send = 1 AND tokens.device_type = 'Android' AND tokens.send_livemode = 1";
   connection.query(connquery, function(err, rows, fields) {
@@ -393,20 +406,23 @@ var alarmMessage3 = new gcm.Message();
         locBody = locBody.replace("%1", playerName);
         locBody = locBody.replace("%2", homeGoals);
         locBody = locBody.replace("%3", awayGoals);
-        alarmMessage3.addNotification({
-          title: locTitle,
-          body: locBody,
-          icon: 'footcallogo',
-          sound: 'true'
-        });
-        console.log(alarmMessage3);
-
-          sender.sendNoRetry(alarmMessage3, { to : row.token }, function(err, response) {
-        if(err) console.error(err);
-        else {
-          console.log(JSON.stringify(response));
+        var fcmMessage = {
+          to: row.token,
+          notification: {
+            title: locTitle,
+            body: locBody,
+            sound: 'true'
+          }
+        };
+        console.log(fcmMessage);
+        
+        fcmSender.send(fcmMessage, function(err, response){
+        if (err) {
+          console.log("Something has gone wrong!" , err);
+        } else {
+         console.log("Successfully sent with response: ", response);
         }
-      });
+        });
       });
     }else{
       console.log('Error while performing Query.');
@@ -421,7 +437,6 @@ var body = req.body.body;
 var olddate = req.body.olddate;
 var newdate = req.body.newdate;
 var title = "event_moved";
-var alarmMessage3 = new gcm.Message();
 
   var connquery = "SELECT tokens.accountID, tokens.token, tokens.device_language FROM tokens LEFT JOIN accounts ON tokens.accountID = accounts.account_ID WHERE accounts.favorites REGEXP '[[:<:]]" + teamID + "[[:>:]]' AND tokens.send = 1 AND tokens.device_type = 'Android' AND tokens.send_livemode = 1";
   connection.query(connquery, function(err, rows, fields) {
@@ -433,20 +448,23 @@ var alarmMessage3 = new gcm.Message();
         var locBody = androidtranslator[row.device_language][body];
         locBody = locBody.replace("%1", olddate);
         locBody = locBody.replace("%2", newdate);
-        alarmMessage3.addNotification({
-          title: locTitle,
-          body: locBody,
-          icon: 'footcallogo',
-          sound: 'true'
+        var fcmMessage = {
+          to: row.token,
+          notification: {
+            title: locTitle,
+            body: locBody,
+            sound: 'true'
+          }
+        };
+        console.log(fcmMessage);
+        
+        fcmSender.send(fcmMessage, function(err, response){
+        if (err) {
+          console.log("Something has gone wrong!" , err);
+        } else {
+         console.log("Successfully sent with response: ", response);
+        }
         });
-        console.log(alarmMessage3);
-
-          sender.sendNoRetry(alarmMessage3, { to : row.token }, function(err, response) {
-        if(err) console.error(err);
-        else {
-          console.log(JSON.stringify(response));
-        }
-      });
       });
     }else{
       console.log('Error while performing Query.');
@@ -455,54 +473,29 @@ var alarmMessage3 = new gcm.Message();
 });
 
 
-app.get("/skberlaar/androidpushdatemove/:teamid/:body",function(req,res){
-var teamID = req.params.teamid;
-var body = req.params.body;
-var alarmMessage2 = new gcm.Message();
-alarmMessage2.addNotification({
-  title: 'Verplaatsing !',
-  body: body,
-  icon: 'footcallogo',
-  sound: 'true'
-});
-  console.log(teamID);
-  var connquery = "SELECT tokens.accountID, tokens.token FROM tokens LEFT JOIN accounts ON tokens.accountID = accounts.account_ID WHERE accounts.favorites REGEXP '[[:<:]]" + teamID + "[[:>:]]' AND tokens.send = 1 AND tokens.send_anul = 1 AND tokens.device_type = 'Android'";
-  connection.query(connquery, function(err, rows, fields) {
-    if (!err){
-      res.end(JSON.stringify(rows));
-      console.log(rows)
-      rows.forEach(function(row, i) {
-          sender.sendNoRetry(alarmMessage2, { to : row.token }, function(err, response) {
-        if(err) console.error(err);
-        else {
-          console.log(JSON.stringify(response));
-        }
-      });
-      });
-    }else{
-      console.log('Error while performing Query.');
-    }
- });
-});
-
-app.get("/skberlaar/androidtestpush/:accountid",function(req,res){
+app.get("/footcal/androidtestpush/:accountid",function(req,res){
 var accountID = req.params.accountid;
-var alarmMessage3 = new gcm.Message();
-alarmMessage3.addNotification({
-  title: 'Test !',
-  body: 'Test bericht van sk Berlaar',
-  icon: 'footcallogo',
-  sound: 'true'
-});
   connection.query("SELECT token from tokens WHERE device_type = 'Android' AND accountID = ?", req.params.accountid, function(err, rows, fields) {
     if (!err){
       res.end(JSON.stringify(rows));
       console.log(rows)
       rows.forEach(function(row, i) {
-          sender.sendNoRetry(alarmMessage3, { to : row.token }, function(err, response) {
-        if(err) console.error(err);
-        else {
-          console.log(JSON.stringify(response));
+
+      var fcmMessage = {
+          to: row.token,
+          notification: {
+            title: 'Test !',
+            body: 'Test bericht van FootCal',
+            sound: 'true'
+          }
+        };
+      console.log(fcmMessage);
+        
+      fcmSender.send(fcmMessage, function(err, response){
+      if (err) {
+        console.log("Something has gone wrong!" , err);
+      } else {
+       onsole.log("Successfully sent with response: ", response);
         }
       });
       });
@@ -3433,9 +3426,10 @@ app.post("/image/android/upload",function(req,res){
 console.log(req.body.picurl);
 console.log(req.body.photo);
 //res.end(JSON.stringify("success"));
+var uploadDir = '/var/www/html/' + apachedir + "/images/";
 
 var imageBuffer = new Buffer(req.body.photo, 'base64');
-fs.writeFile("/Applications/MAMP/htdocs/skberlaar/images/" + req.body.picurl, imageBuffer, function(err) { 
+fs.writeFile(uploadDir + req.body.picurl, imageBuffer, function(err) { 
   res.end(JSON.stringify("success"));
 });
 
