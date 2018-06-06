@@ -320,8 +320,11 @@ console.log(teamID);
         if (clubID != row.active_clubID){
             title = "club_annulation";
           }
+        console.log(title);
         var locTitle = androidtranslator[row.device_language][title];
         locTitle = locTitle.replace("%1", clubName);
+        console.log(clubName);
+        console.log(locTitle);
         var body = androidtranslator[row.device_language][eventType];
         body = body.replace("%1", date);
         body = body.replace("%2", teamName);
