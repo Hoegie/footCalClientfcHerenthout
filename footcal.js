@@ -321,7 +321,7 @@ console.log(teamID);
             title = "club_annulation";
           }
         var locTitle = androidtranslator[row.device_language][title];
-        locTitle = locTitle.replace("%1", "[" + clubName + "]" + "<br />");
+        locTitle = locTitle.replace("%1", "[" + clubName.toLowerCase() + "]");
         var body = androidtranslator[row.device_language][eventType];
         body = body.replace("%1", date);
         body = body.replace("%2", teamName);
