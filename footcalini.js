@@ -1,4 +1,4 @@
-//fcHerenthout
+//fcHerenthout test1
 module.exports.clubID = '2';
 module.exports.clubName = 'FC HERENTHOUT';
 module.exports.apisec = false;
