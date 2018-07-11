@@ -1,9 +1,8 @@
-//LIVE VERSION 4,0,1 incl fcm
+//LIVE VERSION 4,0,3 incl fcm
 var express    = require('express');
 var mysql      = require('mysql');
 var bodyParser = require('body-parser');
 var apn = require('apn');
-//var gcm = require('node-gcm');
 var fcm = require('fcm-push');
 var nodemailer = require('nodemailer');
 var ejs = require('ejs');
@@ -3113,6 +3112,17 @@ connection.query('SELECT * FROM homelocations', function(err, rows, fields) {
   });
 });
 
+app.get("/homelocations/php/all",function(req,res){
+connection.query('SELECT homelocation_ID, name as "Naam", street as "Straat", street_nr as "Nr", postal_code as "Postcode", town as "Plaats" FROM homelocations', function(err, rows, fields) {
+/*connection.end();*/
+  if (!err){
+    console.log('The solution is: ', rows);
+    res.end(JSON.stringify(rows));
+  }else{
+    console.log('Error while performing Query.');
+  }
+  });
+});
 
 app.get("/homelocations/homelocationid/:homelocationid",function(req,res){
 connection.query('SELECT * FROM homelocations where homelocation_ID = ?', req.params.homelocationid, function(err, rows, fields) {
