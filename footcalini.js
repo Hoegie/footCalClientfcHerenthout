@@ -1,6 +1,7 @@
 //fcHerenthout test1
 module.exports.clubID = '2';
 module.exports.clubName = 'FC HERENTHOUT';
+module.exports.clubBaseNr = '683';
 module.exports.apisec = false;
 module.exports.dbname = 'FootCal_fcHerenthout';
 module.exports.apachedir = 'fcHerenthout';
