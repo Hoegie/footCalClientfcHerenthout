@@ -179,6 +179,7 @@ app.post("/footcal/iosgoallivepush",function(req,res){
   var title = req.body.title;
   var teamName = req.body.teamname;
   var playerName = req.body.playername;
+  var assistName = req.body.assistname;
   var homeGoals = req.body.homegoals;
   var awayGoals = req.body.awaygoals;
   var notification5 = new apn.Notification();
@@ -188,7 +189,11 @@ app.post("/footcal/iosgoallivepush",function(req,res){
   notification5.titleLocKey = title;
   notification5.titleLocArgs = [teamName];
   notification5.locKey = body;
-  notification5.locArgs = [playerName, homeGoals, awayGoals];
+  if (assistName != "none"){
+    notification5.locArgs = [playerName, assistName, homeGoals, awayGoals];
+  } else {
+    notification5.locArgs = [playerName, homeGoals, awayGoals];
+  }
   console.log("ioslivegoalpush gehit !!");
   var connquery = "SELECT tokens.accountID, tokens.token, tokens.active_clubID FROM tokens LEFT JOIN accounts ON tokens.accountID = accounts.account_ID WHERE accounts.favorites REGEXP '[[:<:]]" + teamID + "[[:>:]]' AND tokens.send = 1 AND tokens.device_type = 'Apple' AND tokens.send_livemode = 1";
   connection.query(connquery, function(err, rows, fields) {
@@ -383,8 +388,8 @@ app.post("/footcal/androidlivepush",function(req,res){
 var teamID = req.body.teamid;
 var body = req.body.body;
 var title = req.body.title;
+var sendTitle = "";
 var teamName = req.body.teamname;
-console.log(teamID);
 
   var connquery = "SELECT tokens.accountID, tokens.token, tokens.device_language, tokens.active_clubID FROM tokens LEFT JOIN accounts ON tokens.accountID = accounts.account_ID WHERE accounts.favorites REGEXP '[[:<:]]" + teamID + "[[:>:]]' AND tokens.send = 1 AND tokens.device_type = 'Android' AND tokens.send_livemode = 1";
   connection.query(connquery, function(err, rows, fields) {
@@ -393,9 +398,12 @@ console.log(teamID);
       console.log(rows)
       rows.forEach(function(row, i) {
         if (clubID != row.active_clubID){
-            title = "club_" + title;
-          }
-        var locTitle = androidtranslator[row.device_language][title];
+            sendTitle = "club_" + title;
+          } else {
+            sendTitle = title;
+          } 
+        var locTitle = androidtranslator[row.device_language][sendTitle];
+        console.log(locTitle);
         locTitle = locTitle.replace("%1", teamName);
         locTitle = locTitle.replace("%2", "[" + clubName.toLowerCase() + "]");
         var fcmMessage = {
@@ -427,8 +435,10 @@ app.post("/footcal/androidgoallivepush",function(req,res){
 var teamID = req.body.teamid;
 var body = req.body.body;
 var title = req.body.title;
+var sendTitle = "";
 var teamName = req.body.teamname;
 var playerName = req.body.playername;
+var assistName = req.body.assistname;
 var homeGoals = req.body.homegoals;
 var awayGoals = req.body.awaygoals;
 
@@ -439,15 +449,27 @@ var awayGoals = req.body.awaygoals;
       console.log(rows)
       rows.forEach(function(row, i) {
         if (clubID != row.active_clubID){
-            title = "club_" + title;
+            sendTitle = "club_" + title;
+          } else {
+            sendTitle = title;
           }
-        var locTitle = androidtranslator[row.device_language][title];
+        var locTitle = androidtranslator[row.device_language][sendTitle];
         locTitle = locTitle.replace("%1", teamName);
         locTitle = locTitle.replace("%2", "[" + clubName.toLowerCase() + "]");
         var locBody = androidtranslator[row.device_language][body];
-        locBody = locBody.replace("%1", playerName);
-        locBody = locBody.replace("%2", homeGoals);
-        locBody = locBody.replace("%3", awayGoals);
+        console.log(body);
+        console.log(locBody);
+        if (assistName != "none") {
+          locBody = locBody.replace("%1", playerName);
+          locBody = locBody.replace("%2", assistName);
+          locBody = locBody.replace("%3", homeGoals);
+          locBody = locBody.replace("%4", awayGoals);
+
+        } else {
+          locBody = locBody.replace("%1", playerName);
+          locBody = locBody.replace("%2", homeGoals);
+          locBody = locBody.replace("%3", awayGoals);
+        }
         var fcmMessage = {
           to: row.token,
           notification: {
@@ -479,6 +501,7 @@ var body = req.body.body;
 var olddate = req.body.olddate;
 var newdate = req.body.newdate;
 var title = "event_moved";
+var sendTitle = "";
 
   var connquery = "SELECT tokens.accountID, tokens.token, tokens.device_language, tokens.active_clubID FROM tokens LEFT JOIN accounts ON tokens.accountID = accounts.account_ID WHERE accounts.favorites REGEXP '[[:<:]]" + teamID + "[[:>:]]' AND tokens.send = 1 AND tokens.device_type = 'Android' AND tokens.send_livemode = 1";
   connection.query(connquery, function(err, rows, fields) {
@@ -487,9 +510,11 @@ var title = "event_moved";
       console.log(rows)
       rows.forEach(function(row, i) {
         if (clubID != row.active_clubID){
-            title = "club_" + title;
+            sendTitle = "club_" + title;
+          } else {
+            sendTitle = title;
           }
-        var locTitle = androidtranslator[row.device_language][title];
+        var locTitle = androidtranslator[row.device_language][sendTitle];
         locTitle = locTitle.replace("%1", "[" + clubName.toLowerCase() + "]");
         var locBody = androidtranslator[row.device_language][body];
         locBody = locBody.replace("%1", olddate);
@@ -1389,10 +1414,14 @@ connection.query("UPDATE settings SET notifDate = STR_TO_DATE('" + req.body.noti
 
 app.put("/settings/colors",function(req,res){
   var put = {
+        navgrad1: req.body.navgrad1,
+        navgrad2: req.body.navgrad2,
         color1: req.body.color1,
         color2: req.body.color2,
         navtextcolor: req.body.navtextcolor,
-        headertextcolor: req.body.headertextcolor
+        headertextcolor: req.body.headertextcolor,
+        backgrad1: req.body.backgrad1,
+        backgrad2: req.body.backgrad2
     };
     console.log(put);
 
@@ -1802,7 +1831,7 @@ connection.query('UPDATE userroles SET ? WHERE userrole_ID = ?', [put, req.param
 /*TEAMS*/
 
 app.get("/teams/all",function(req,res){
-connection.query('SELECT team_ID, team_name, team_series, team_division FROM teams ORDER BY LPAD(lower(team_name), 10,0) ASC', function(err, rows, fields) {
+connection.query('SELECT team_ID, team_name, team_series, team_division, assists FROM teams ORDER BY LPAD(lower(team_name), 10,0) ASC', function(err, rows, fields) {
 /*connection.end();*/
   if (!err){
     console.log('The solution is: ', rows);
@@ -1862,6 +1891,17 @@ connection.query('SELECT team_name, team_division, team_series FROM teams WHERE 
   });
 });
 
+app.get("/teams/teamsettings/:teamid",function(req,res){
+connection.query('SELECT assists FROM teams WHERE team_ID = ?', req.params.teamid, function(err, rows, fields) {
+/*connection.end();*/
+  if (!err){
+    console.log('The solution is: ', rows);
+    res.end(JSON.stringify(rows));
+  }else{
+    console.log('Error while performing Query.');
+  }
+  });
+});
 
 app.get("/teams/favorites/:favorites",function(req,res){
   console.log(req.params.favorites);
@@ -1922,7 +1962,8 @@ app.put("/teams/edit/:teamid",function(req,res){
         D2_ID: req.body.D2ID,
         Co_ID: req.body.CoID,
         team_division: req.body.teamdivision,
-        team_series: req.body.teamseries
+        team_series: req.body.teamseries,
+        assists: req.body.assists
     };
     console.log(put);
 connection.query('UPDATE teams SET ? where team_ID = ?', [put, req.params.teamid], function(err,result) {
@@ -2230,7 +2271,7 @@ connection.query('SELECT confirmed_players FROM events where event_ID = ?', req.
     if (rows[0].confirmed_players != 'none'){
       var confirms = '(' + rows[0].confirmed_players + ',2' + ')';
       console.log(confirms);
-      var connquery = "SELECT players.player_ID, players.first_name, players.last_name, players.pic_url, CONVERT(COALESCE((SELECT goals.goals_ID from goals WHERE goals.playerid = players.player_ID AND goals.eventID = " + req.params.eventid + "), 'none'), CHAR(50)) as goals_ID, COALESCE((SELECT goals.goals from goals WHERE goals.playerid = players.player_ID AND goals.eventID = " + req.params.eventid + "), 0) as goals, COALESCE((SELECT goals.timestamps from goals WHERE goals.playerid = players.player_ID AND goals.eventID = " + req.params.eventid + "), 'none') as timestamps FROM players where players.player_ID IN " + confirms + " GROUP BY players.last_name ORDER BY CASE WHEN players.player_ID = 2 THEN 1 ELSE 0 END, players.last_name";
+      var connquery = "SELECT players.player_ID, players.first_name, players.last_name, players.pic_url, CONVERT(COALESCE((SELECT goals.goals_ID from goals WHERE goals.playerid = players.player_ID AND goals.eventID = " + req.params.eventid + "), 'none'), CHAR(50)) as goals_ID, COALESCE((SELECT goals.goals from goals WHERE goals.playerid = players.player_ID AND goals.eventID = " + req.params.eventid + "), 0) as goals, COALESCE((SELECT goals.timestamps from goals WHERE goals.playerid = players.player_ID AND goals.eventID = " + req.params.eventid + "), 'none') as timestamps, COALESCE((SELECT goals.assists from goals WHERE goals.playerid = players.player_ID AND goals.eventID = " + req.params.eventid + "), 'none') as assists FROM players where players.player_ID IN " + confirms + " GROUP BY players.last_name ORDER BY CASE WHEN players.player_ID = 2 THEN 1 ELSE 0 END, players.last_name";
       console.log(connquery);
       connection.query(connquery, confirms, function(err, rows, fields) {
       /*connection.end();*/
@@ -3298,13 +3339,138 @@ connection.query('SELECT goals_ID, goals, timestamps FROM goals WHERE (playerID 
   });
 });
 
+app.get("/goals/gameassists/:eventid/:teamid",function(req,res){
+connection.query("SELECT player_ID, pic_url, full_name, assistcount FROM (SELECT players.player_ID, CONCAT(players.first_name, ' ', players.last_name) as full_name, players.pic_url, ROUND(SUM((LENGTH(goals.assists) - LENGTH(REPLACE(goals.assists, players.player_ID, ''))) / LENGTH(players.player_ID)), 0) as assistcount FROM goals JOIN players ON goals.teamID = players.teamID WHERE players.teamID = ? AND goals.eventID = ? GROUP BY full_name ORDER By assistcount DESC) as x WHERE assistcount <> 0", [req.params.teamid, req.params.eventid], function(err,result) {
+/*connection.end();*/
+  if (!err){
+    console.log(result);
+    res.end(JSON.stringify(result));
+  }else{
+    console.log('Error while performing Query.');
+  }
+  });
+});
+
+app.get("/goals/gamegoals/:eventid",function(req,res){
+connection.query("SELECT players.player_ID, concat(players.first_name, ' ', players.last_name) as full_name, players.pic_url, goals.goals FROM goals RIGHT JOIN players on goals.playerID = players.player_ID WHERE players.player_ID > 2 AND goals.eventID = ? ORDER BY goals.goals DESC", req.params.eventid, function(err,result) {
+/*connection.end();*/
+  if (!err){
+    console.log(result);
+    res.end(JSON.stringify(result));
+  }else{
+    console.log('Error while performing Query.');
+  }
+  });
+});
+
+
+app.get("/goals/gameresume/:eventid",function(req,res){
+var eventID = req.params.eventid;
+connection.query("SELECT events.confirmed_players FROM events WHERE event_ID = ?", req.params.eventid, function(err, rows, fields) {
+  if (!err){
+    console.log(rows);
+    var confirms = "(" + rows[0].confirmed_players + ",1" + ",2" +")";
+    
+    var connquery1 = "SELECT players.player_ID, CONCAT(players.first_name, ' ', players.last_name) as full_name FROM players WHERE players.player_ID IN" + confirms;
+    connection.query(connquery1, function(err, rows, fields){
+        if (!err){
+            
+            var confirmedplayersdic = {};
+
+            rows.forEach(function(row, b){
+              confirmedplayersdic[row.player_ID] = row.full_name;
+            });
+
+
+            var connquery2 = "SELECT players.player_ID, players.first_name, players.last_name, COALESCE((SELECT goals.goals from goals WHERE goals.playerid = players.player_ID AND goals.eventID = " + eventID + "), 0) as goals, COALESCE((SELECT goals.timestamps from goals WHERE goals.playerid = players.player_ID AND goals.eventID = " + eventID + "), 'none') as timestamps, COALESCE((SELECT goals.assists from goals WHERE goals.playerid = players.player_ID AND goals.eventID = " + eventID + "), 'none') as assists FROM players where players.player_ID IN " + confirms + " AND COALESCE((SELECT goals.goals from goals WHERE goals.playerid = players.player_ID AND goals.eventID = " + eventID + "), 0) <> '0'";
+              connection.query(connquery2, function(err, rows, fields) {
+              if (!err){
+              
+                            var scoresarray = [];
+                            rows.forEach(function(row, a) {
+
+                                var timestampstring = row.timestamps;
+                                var timestamparray = timestampstring.split(",");
+                                var assiststring = row.assists;
+                                var assistarray = [];
+                                var assistnamearray = [];
+
+                                if (assiststring != 'none'){
+                                    assistarray = assiststring.split(",");
+                                    assistarray.forEach(function(assistID, y){
+                                      if (assistID == 0){
+                                          assistnamearray.push("none");
+                                      } else {
+                                          assistnamearray.push(confirmedplayersdic[assistID]);
+                                      }
+                                    });
+                                }
+                                console.log(assistnamearray);
+
+                                timestamparray.forEach(function(timestampitem,i) {
+
+                                    var assistitem = '';
+                                    if (assiststring != 'none'){
+                                      assistitem = assistnamearray[i];  
+                                    } else {
+                                      assistitem = "none";
+                                    }
+
+                                    var tempscoredic = {
+
+                                        timestamp: timestampitem,
+                                        name: row.first_name + " " + row.last_name,
+                                        player_id: row.player_ID,
+                                        assistName: assistitem
+
+                                    };
+                                    scoresarray.push(tempscoredic);
+
+                                });
+                                scoresarray.sort(function(a,b){return a.timestamp-b.timestamp});
+
+                            });   
+
+
+            res.end(JSON.stringify(scoresarray));
+              }else{
+                console.log('Error2 while performing Query.');
+                //console.log(err);
+            }
+            });
+        } else {
+          console.log('Error1 while performing Query.');
+        }
+    });
+
+  }else{
+    console.log('Error0 while performing Query.');
+  }
+  });
+});
+
+
+app.get("/goals/finalscore/:eventid",function(req,res){
+  var query = "SELECT owngoals, opponentgoals FROM (SELECT COALESCE(SUM(goals), 0) as owngoals FROM goals WHERE eventID = " + req.params.eventid + " AND goals.playerID <> 1) as owngoals, (SELECT COALESCE(SUM(goals),0) as opponentgoals FROM goals WHERE eventID = " + req.params.eventid + " AND goals.playerID = 1) as opponentgoals";
+connection.query(query, function(err,result) {
+/*connection.end();*/
+  if (!err){
+    console.log(result);
+    res.end(JSON.stringify(result));
+  }else{
+    console.log('Error while performing Query.');
+  }
+  });
+});
 
 app.post("/goals/new",function(req,res){
   var post = {
         eventID: req.body.eventid,
         playerID: req.body.playerid,
         goals: req.body.goals,
-        timestamps: req.body.timestamps
+        timestamps: req.body.timestamps,
+        assists: req.body.assists,
+        teamID: req.body.teamid
     };
     console.log(post);
 connection.query('INSERT INTO goals SET ?', post, function(err,result) {
@@ -3321,7 +3487,8 @@ connection.query('INSERT INTO goals SET ?', post, function(err,result) {
 app.put("/goals/goalsid/:goalsid",function(req,res){
   var put = {
         goals: req.body.goals,
-        timestamps: req.body.timestamps
+        timestamps: req.body.timestamps,
+        assists: req.body.assists
     };
     console.log(put);
 connection.query('UPDATE goals SET ? WHERE goals_ID = ? ', [put, req.params.goalsid], function(err,result) {
@@ -3429,7 +3596,7 @@ connection.query('SELECT confirmed_players FROM tournamentevents where tournamen
     if (rows[0].confirmed_players != 'none'){
       var confirms = '(' + rows[0].confirmed_players + ',2' + ')';
       console.log(confirms);
-      var connquery = "SELECT players.player_ID, players.first_name, players.last_name, players.pic_url, CONVERT(COALESCE((SELECT tournamentgoals.tournamentgoals_ID from tournamentgoals WHERE tournamentgoals.playerid = players.player_ID AND tournamentgoals.tournamenteventID = " + req.params.teventid + "), 'none'), CHAR(50)) as tournamentgoals_ID, COALESCE((SELECT tournamentgoals.goals from tournamentgoals WHERE tournamentgoals.playerid = players.player_ID AND tournamentgoals.tournamenteventID = " + req.params.teventid + "), 0) as tournamentgoals, COALESCE((SELECT tournamentgoals.timestamps from tournamentgoals WHERE tournamentgoals.playerid = players.player_ID AND tournamentgoals.tournamenteventID = " + req.params.teventid + "), 'none') as timestamps FROM players where players.player_ID IN " + confirms + " GROUP BY players.last_name ORDER BY CASE WHEN players.player_ID = 2 THEN 1 ELSE 0 END, players.last_name";
+      var connquery = "SELECT players.player_ID, players.first_name, players.last_name, players.pic_url, CONVERT(COALESCE((SELECT tournamentgoals.tournamentgoals_ID from tournamentgoals WHERE tournamentgoals.playerid = players.player_ID AND tournamentgoals.tournamenteventID = " + req.params.teventid + "), 'none'), CHAR(50)) as tournamentgoals_ID, COALESCE((SELECT tournamentgoals.goals from tournamentgoals WHERE tournamentgoals.playerid = players.player_ID AND tournamentgoals.tournamenteventID = " + req.params.teventid + "), 0) as tournamentgoals, COALESCE((SELECT tournamentgoals.timestamps from tournamentgoals WHERE tournamentgoals.playerid = players.player_ID AND tournamentgoals.tournamenteventID = " + req.params.teventid + "), 'none') as timestamps, COALESCE((SELECT tournamentgoals.assists from tournamentgoals WHERE tournamentgoals.playerid = players.player_ID AND tournamentgoals.tournamenteventID = " + req.params.teventid + "), 'none') as assists FROM players where players.player_ID IN " + confirms + " GROUP BY players.last_name ORDER BY CASE WHEN players.player_ID = 2 THEN 1 ELSE 0 END, players.last_name";
       console.log(connquery);
       connection.query(connquery, confirms, function(err, rows, fields) {
       /*connection.end();*/
@@ -3651,7 +3818,8 @@ app.post("/tournamentgoals/new",function(req,res){
         tournamenteventID: req.body.tournamenteventid,
         playerID: req.body.playerid,
         goals: req.body.goals,
-        timestamps: req.body.timestamps
+        timestamps: req.body.timestamps,
+        assists: req.body.assists
     };
     console.log(post);
 connection.query('INSERT INTO tournamentgoals SET ?', post, function(err,result) {
@@ -3668,7 +3836,8 @@ connection.query('INSERT INTO tournamentgoals SET ?', post, function(err,result)
 app.put("/tournamentgoals/tournamentgoalsid/:tgoalsid",function(req,res){
   var put = {
         goals: req.body.goals,
-        timestamps: req.body.timestamps
+        timestamps: req.body.timestamps,
+        assists: req.body.assists
     };
     console.log(put);
 connection.query('UPDATE tournamentgoals SET ? WHERE tournamentgoals_ID = ? ', [put, req.params.tgoalsid], function(err,result) {
@@ -3819,6 +3988,7 @@ var yearArray = [];
   });
 
 });
+
 
 app.post("/files/gamereports/delete",function(req,res){
 var fileName = req.body.filename;
