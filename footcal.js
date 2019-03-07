@@ -107,6 +107,7 @@ app.post("/footcal/iosanulpush",function(req,res){
   console.log(date);
   console.log(teamName);
   console.log(eventType);
+  /*
   var notification2 = new apn.Notification();
   notification2.topic = 'be.degronckel.FootCal';
   notification2.expiry = Math.floor(Date.now() / 1000) + 3600;
@@ -114,6 +115,7 @@ app.post("/footcal/iosanulpush",function(req,res){
   notification2.titleLocKey = "Annulation";
   notification2.locKey = locKey;
   notification2.locArgs = [date, teamName];
+  */
   console.log(teamID);
   var connquery = "SELECT tokens.accountID, tokens.token, tokens.active_clubID FROM tokens LEFT JOIN accounts ON tokens.accountID = accounts.account_ID WHERE accounts.favorites REGEXP '[[:<:]]" + teamID + "[[:>:]]' AND tokens.send = 1 AND tokens.send_anul = 1 AND tokens.device_type = 'Apple'";
   connection.query(connquery, function(err, rows, fields) {
@@ -122,12 +124,19 @@ app.post("/footcal/iosanulpush",function(req,res){
       console.log(rows)
       rows.forEach(function(row, i) {
 
+          var notification2 = new apn.Notification();
+          notification2.topic = 'be.degronckel.FootCal';
+          notification2.expiry = Math.floor(Date.now() / 1000) + 3600;
+          notification2.sound = 'ping.aiff';
+          notification2.titleLocKey = "Annulation";
+          notification2.locKey = locKey;
+          notification2.locArgs = [date, teamName];
+
+
           if (clubID != row.active_clubID){
             //notification2.titleLocKey = "%1$@ Annulation";
             //notification2.titleLocArgs = [clubName];
             notification2.subtitle = "[" + clubName + "]";
-          } else {
-            notification2.subtitle = " ";
           }
 
           console.log("active clubID :" + row.active_clubID);
