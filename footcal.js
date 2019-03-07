@@ -126,6 +126,8 @@ app.post("/footcal/iosanulpush",function(req,res){
             //notification2.titleLocKey = "%1$@ Annulation";
             //notification2.titleLocArgs = [clubName];
             notification2.subtitle = "[" + clubName + "]";
+          } else {
+            notification2.subtitle = "";
           }
 
           apnProvider.send(notification2, row.token).then(function(result) { 
