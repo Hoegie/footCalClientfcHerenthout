@@ -127,11 +127,11 @@ app.post("/footcal/iosanulpush",function(req,res){
             //notification2.titleLocArgs = [clubName];
             notification2.subtitle = "[" + clubName + "]";
           } else {
-            notification2.subtitle = "";
+            notification2.subtitle = " ";
           }
 
           console.log("active clubID :" + row.active_clubID);
-          console.log(notification2.subtitle);
+          console.log(notification2);
 
 
           apnProvider.send(notification2, row.token).then(function(result) { 
