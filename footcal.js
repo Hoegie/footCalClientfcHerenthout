@@ -130,6 +130,10 @@ app.post("/footcal/iosanulpush",function(req,res){
             notification2.subtitle = "";
           }
 
+          console.log("active clubID :" + row.active_clubID);
+          console.log(notification2.subtitle);
+
+
           apnProvider.send(notification2, row.token).then(function(result) { 
             console.log(result);
           });
